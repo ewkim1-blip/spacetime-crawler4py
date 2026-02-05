@@ -3,9 +3,11 @@ from urllib.parse import urlparse
 #student imports:
 from urllib.robotparser import RobotFileParser #imported to handle robots.txt parsing | https://docs.python.org/3/library/urllib.robotparser.html#module-urllib.robotparser
 import time
+from utils.download import download
+from utils.config import Config
 
-permissions_cache = {} #str::domain, RobotFileParser::rfp
-time_visited_cache = {} 
+permissions_cache = {} #(str::domain, rfp::RobotFileParser)
+time_visited_cache = {} #(str::domain, float::time)
 
 def scraper(url, resp):
     links = extract_next_links(url, resp)
@@ -54,8 +56,11 @@ def is_valid(url):
     if permissions_cache[domain] and permissions_cache[domain].can_fetch('*', url): #robots.txt exists and we don't have permission to parse
         return False
 
-    #Here we can consider adding a sleep(duration) call. we also need to cache these results, 
-    #so we can avoid spamming robots.txt reads and abide by rfp.crawl_delay('*')
+    if permissions_cache[domain] and permissions_cache.crawl_delay('*'):
+        delay = permissions_cache.crawl_delay('*')
+        if time.time() - time_visited_cache[domain] < delay: # if its been less than delay amount of time since our last visit
+            time.sleep(delay - (time.time() - time_visited_cache[domain])) # wait the rest of the time in the delay
+
     return not re.match( 
         r".*\.(css|js|bmp|gif|jpe?g|ico"
         + r"|png|tiff?|mid|mp2|mp3|mp4"
