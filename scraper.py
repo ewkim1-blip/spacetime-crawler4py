@@ -42,13 +42,23 @@ class Scraper:
             print ("TypeError for ", parsed)
             raise
         
+        allowed_domains = [
+            ".ics.uci.edu", 
+            ".cs.uci.edu", 
+            ".informatics.uci.edu", 
+            ".stat.uci.edu"
+        ]
+        
+        # Check if the hostname ends with one of the allowed domains
+        if not any(parsed.netloc.endswith(d) for d in allowed_domains):
+            return False
         domain = f"{parsed.scheme}://{parsed.netloc}"
 
         #--Browse robots.txt--
         if not domain in self.permissions_cache:
             self.create_rfp(domain)
         
-        if self.permissions_cache[domain] and self.permissions_cache[domain].can_fetch('*', url): #robots.txt exists and we don't have permission to parse
+        if self.permissions_cache[domain] and not self.permissions_cache[domain].can_fetch('*', url): #robots.txt exists and we don't have permission to parse
             return False
 
         if self.permissions_cache[domain] and self.permissions_cache.crawl_delay('*'):
